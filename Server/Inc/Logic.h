@@ -7,7 +7,7 @@
  #define STOP_BIT_ONE  boost::asio::serial_port_base::stop_bits::one
  #define START_CONVERSATION 0xA 
  #define END_CONVERSATION 0xB
-#define PATH_TO_PORT "/dev/ttyUSB0"
+#define PATH_TO_PORT "/dev/ttyUSB2"
 
 #define CREATE_WINDOW  0x11
 #define RESIZE_WINDOW  0x12
@@ -34,7 +34,7 @@ int8_t create_window(uint16_t, uint16_t);
 int8_t resize_window(uint16_t, uint16_t);
 int8_t fill_color(int8_t, int8_t,int8_t);
 int8_t draw_pixel(uint16_t, uint16_t, int8_t , int8_t , int8_t );
-int8_t draw_image(uint16_t , uint16_t ,uint16_t *);
+int8_t draw_image(uint16_t , uint16_t ,uint16_t , uint16_t,uint16_t *);
 int8_t write_text(uint16_t , uint16_t,uint8_t ,uint8_t ,uint8_t , uint8_t  *);
 int8_t reset_screen();
 int8_t close_window();

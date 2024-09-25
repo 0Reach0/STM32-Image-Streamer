@@ -10,7 +10,7 @@
  #define SUCCESFUL_OPERATION 0x20
  #define READY  0x18
  #define ERROR  0X19
-
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 
 
@@ -25,9 +25,10 @@ int8_t create_window(uint16_t, uint16_t);
 int8_t resize_window(uint16_t, uint16_t);
 int8_t fill_color(uint8_t, uint8_t,uint8_t);
 int8_t draw_pixel(uint16_t, uint16_t, uint8_t , uint8_t , uint8_t );
-int8_t draw_image(uint16_t , uint16_t ,uint16_t *);
+int8_t draw_image(uint16_t , uint16_t,uint16_t , uint16_t ,uint16_t *,uint16_t);
 int8_t write_text(uint16_t , uint16_t, uint8_t,uint8_t,uint8_t,uint8_t *);
 int8_t reset_screen();
 int8_t close_window();
 int8_t start_conversation();
 int8_t stop_conversation();
+int8_t Test();

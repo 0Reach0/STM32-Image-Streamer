@@ -10,7 +10,6 @@
 #include <thread>
 
 
-
  const uint8_t COMMAND_OPCODE =0;
  const uint8_t DATA_OPCODE =1;
  const uint8_t SUCCESFUL_OPERATION =0x20 ;
@@ -22,17 +21,13 @@
 
 
 
-
-
-
-
-extern sf::Color fillColor;
+extern std::atomic<sf::Color> fillColor;
 extern std::atomic<bool> isActive;
 extern std::atomic<bool> isRender;
 extern std::atomic<bool> isResize;
 extern boost::asio::serial_port serial;
 extern std::vector<sf::Sprite> sprites;
-extern std::vector<sf::Texture> images;
+extern std::vector<sf::Texture * > images;
 extern std::vector<sf::Vertex> pixels;
 extern sf::RenderWindow window;
 extern std::atomic<uint16_t> widht ;
@@ -60,12 +55,11 @@ int8_t listening_create_window()
     }
     
     const std::size_t expected_size = 4; 
-    std::uint8_t data[expected_size];    
+    std::uint8_t  * data = new uint8_t[expected_size];    
 
-    std::memset(data, 0, sizeof(data));
 
     boost::system::error_code ec;
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, sizeof(data)), boost::asio::transfer_exactly(expected_size), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size), boost::asio::transfer_exactly(expected_size), ec);
     if (!ec) {
         if (bytes_read == expected_size) {
             uint16_t width = (static_cast<uint16_t>(data[0]) << 8) | data[1];
@@ -80,7 +74,7 @@ int8_t listening_create_window()
         return 0;
     }
 
-    std::memset(data, 0, sizeof(data));
+   delete[] data;
     return 1;
 }
 
@@ -96,13 +90,12 @@ int8_t listening_resize_window()
         return 0;
     }
     const std::size_t expected_size = 4; 
-    std::uint8_t data[expected_size];    
+    std::uint8_t* data = new uint8_t[expected_size];    
 
-    std::memset(data, 0, sizeof(data));
 
     boost::system::error_code ec;
     
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, sizeof(data)), boost::asio::transfer_exactly(expected_size), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size), boost::asio::transfer_exactly(expected_size), ec);
 
     if (!ec) {
         if (bytes_read == expected_size) {
@@ -118,7 +111,7 @@ int8_t listening_resize_window()
         return 0;
     }
 
-    std::memset(data, 0, sizeof(data));   
+    delete[] data;
     return 1; 
 }
 
@@ -133,12 +126,11 @@ int8_t listening_fill_color()
         return 0;
     }
     const std::size_t expected_size = 3; 
-    uint8_t data[expected_size];    
+    uint8_t * data = new uint8_t[expected_size];    
 
-    std::memset(data, 0, sizeof(data));
 
     boost::system::error_code ec;
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(&data, sizeof(data)), boost::asio::transfer_exactly(expected_size), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size), boost::asio::transfer_exactly(expected_size), ec);
     if (!ec) {
         if (bytes_read == expected_size) {
             uint8_t red = (static_cast<uint8_t>(data[0]));
@@ -154,7 +146,7 @@ int8_t listening_fill_color()
         return 0;
     }
 
-    std::memset(data, 0, sizeof(data));  
+    delete[] data;
     return 1;
      
 }
@@ -170,11 +162,10 @@ int8_t listening_draw_pixel()
         return 0;
     }
     const std::size_t expected_size = 7; 
-    std::uint8_t data[expected_size];     
-    std::memset(data, 0, sizeof(data));
+    std::uint8_t * data = new uint8_t[expected_size];     
 
     boost::system::error_code ec;
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, sizeof(data)), boost::asio::transfer_exactly(expected_size), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size), boost::asio::transfer_exactly(expected_size), ec);
 
     if (!ec) {
         if (bytes_read == expected_size) {
@@ -193,7 +184,7 @@ int8_t listening_draw_pixel()
         return 0;
     }
 
-    std::memset(data, 0, sizeof(data));  
+    delete[] data; 
     return 1;
 }
 
@@ -208,43 +199,42 @@ int8_t listening_draw_image()
     {
         return 0;
     }
-    const std::size_t expected_size = 4+4; 
-    std::uint8_t data[expected_size];    
+    const std::size_t expected_size = 4+4+4+4; 
+    std::uint8_t * data = new uint8_t[expected_size];    
     uint32_t  image_size = 0;
 
-    std::memset(data, 0, sizeof(data));
 
     boost::system::error_code ec;
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, sizeof(data)), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size),  boost::asio::transfer_exactly(expected_size), ec);
 
     if (!ec) {
+        if(!sent_ready())
+        {
+            return 0;
+        }
         uint16_t x = (static_cast<uint16_t>(data[0]) << 8) | data[1];
         uint16_t y =(static_cast<uint16_t>(data[2]) << 8) | data[3];
-        image_size  =(static_cast<uint16_t>(data[4]) << 24) | (data[5] << 16)|(data[6] << 8)| data[7];
-         uint32_t trimmed = image_size;
-        if (trimmed != 0) {
-        while ((trimmed & 1) == 0) {
-            trimmed >>= 1;
-        }
-    }
-        uint16_t image[trimmed];
-        sent_ready();
+        uint16_t widht = (static_cast<uint16_t>(data[4]) << 8) | data[5];
+        uint16_t height = (static_cast<uint16_t>(data[6]) << 8) | data[7];
+        image_size  =(static_cast<uint16_t>(data[8]) << 24) | (data[9] << 16)|(data[10] << 8)| data[11];
+        uint16_t * image = new uint16_t[image_size];
         std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
-        bytes_read = boost::asio::read(serial, boost::asio::buffer(image, trimmed *sizeof(image)), boost::asio::transfer_exactly(trimmed), ec);
-        if(bytes_read == trimmed)
+        bytes_read = boost::asio::read(serial, boost::asio::buffer(image, image_size), boost::asio::transfer_exactly(image_size), ec);
+        if(bytes_read == image_size)
         {
-            draw_image(x, y,image);
+            draw_image(x, y, widht, height ,image);
         }
         else{
             std::cerr << "Read error: " << bytes_read << " bytes read" << std::endl;
             return 0;
         }
-    } else {
+         delete[] image;
+    }
+     else {
         std::cerr << "Read error " << ec.message() << std::endl;
         return 0;
     }
-
-    std::memset(data, 0, sizeof(data));  
+    delete[] data;  
     return 1;
 }
 
@@ -259,11 +249,11 @@ int8_t listening_write_text()
         return 0;
     }
     const std::size_t expected_size = 4+3+2; 
-    uint8_t data[expected_size];    
+    uint8_t * data = new uint8_t[expected_size];    
     uint16_t  text_size = 0;
 
     boost::system::error_code ec;
-    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, sizeof(data)), ec);
+    std::size_t bytes_read = boost::asio::read(serial, boost::asio::buffer(data, expected_size), boost::asio::transfer_exactly(expected_size), ec);
     if (!ec) {
         if(!sent_ready())
         {
@@ -275,8 +265,8 @@ int8_t listening_write_text()
         uint8_t g = data[5];
         uint8_t b = data[6];
         text_size  =(static_cast<uint16_t>(data[7]) << 8) | data[8];
-        uint8_t text[text_size];
-        bytes_read = boost::asio::read(serial, boost::asio::buffer(&text, sizeof(text)), boost::asio::transfer_exactly(text_size), ec);
+        uint8_t * text = new uint8_t[text_size];
+        bytes_read = boost::asio::read(serial, boost::asio::buffer(text, text_size), boost::asio::transfer_exactly(text_size),  ec);
         if(bytes_read == text_size && !ec)
         {
             write_text(x, y,r,g,b, text);
@@ -285,12 +275,13 @@ int8_t listening_write_text()
             std::cerr << "Read error: " << bytes_read << " bytes read" << std::endl;
             return 0;
         }
+         delete[] text;
     } else {
         std::cerr << "Read error " << ec.message() << std::endl;
         return 0;
     }
 
-    std::memset(data, 0, sizeof(data));  
+    delete[] data;
     return 1;
 }
 
@@ -324,7 +315,7 @@ int8_t resize_window(uint16_t w, uint16_t h)
 int8_t fill_color(int8_t red, int8_t green,int8_t blue)
 {
     isFillScreen.store(true);
-    fillColor = sf::Color(red, green, blue);
+    fillColor.store(sf::Color(red, green, blue));
     return 1;
 }
 
@@ -342,25 +333,44 @@ int8_t draw_pixel(uint16_t x, uint16_t y , int8_t red, int8_t green, int8_t blue
 
 
 
-int8_t draw_image(uint16_t x, uint16_t y, uint16_t *data)
-{
-    std::vector<sf::Uint8> image(x * y * 3); // RGB888
-
-    for (uint16_t i = 0; i < x * y; ++i) {
-        RGB rgb = rgb565_to_rgb888(data[i]);
-        image[i * 3] = rgb.r;
-        image[i * 3 + 1] = rgb.g;
-        image[i * 3 + 2] = rgb.b;
+int8_t draw_image(uint16_t x, uint16_t y, uint16_t weight, uint16_t height, uint16_t *data) {
+    
+uint8_t *rgbData = new uint8_t[weight * height * 4];
+for (int y = 0; y < height; y++) {
+    for (int x = 0; x < weight; x++) {
+        uint16_t i = y * weight + x;
+        uint16_t pixel = data[i];
+        uint8_t r5 = (pixel >> 11) & 0x1F;   
+        uint8_t g6 = (pixel >> 5) & 0x3F;    
+        uint8_t b5 = pixel & 0x1F;           
+        rgbData[i * 4]     = (r5 << 3) | (r5 >> 2);
+        rgbData[i * 4 + 1] = (g6 << 2) | (g6 >> 4);
+        rgbData[i * 4 + 2] = (b5 << 3) | (b5 >> 2);
+        rgbData[i * 4 + 3] = 255;
     }
-     sf::Texture texture;
-    texture.create(x, y);
-    texture.update(image.data());
-
-    sf::Sprite sprite(texture);
-    sprite.setPosition(x, y);
-    return 1;
 }
 
+
+sf::Texture *texture = new sf::Texture();
+texture->create(weight, height);
+texture->update(rgbData);
+
+sf::Sprite sprite(*texture);
+sprite.setPosition(x, y);
+images.push_back(texture);
+sprites.push_back(sprite);
+
+// sf::Image output_image;
+// output_image.create(weight, height, rgbaData);
+// if (!output_image.saveToFile("image.png")) {
+//     std::cerr << "Failed to save image to PNG file" << std::endl;
+//     return 0;
+// }
+
+delete[]  rgbData;    
+
+return 1;
+}
 
 
 int8_t write_text(uint16_t x, uint16_t y, uint8_t r,uint8_t g,uint8_t b, uint8_t * data)
@@ -387,7 +397,7 @@ int8_t reset_screen()
     pixels.erase(pixels.begin(), pixels.end());
     images.erase(images.begin(), images.end());
     sprites.erase(sprites.begin(), sprites.end());
-    fill_color(0,0,0);
+    fill_color(255,255,255);
     return 1;
 }
 
@@ -395,6 +405,10 @@ int8_t reset_screen()
 
  int8_t close_window()
  {
+    pixels.erase(pixels.begin(), pixels.end());
+    images.erase(images.begin(), images.end());
+    sprites.erase(sprites.begin(), sprites.end());
+    fill_color(255,255,255);
     isRender.store(false);
  }
 
@@ -441,26 +455,31 @@ void sent_succesful()
 }
 
 
-RGB rgb565_to_rgb888(uint16_t color) {
+RGB rgb565_to_rgb888(uint16_t pixel) {
     RGB rgb;
 
-    rgb.r = ((color >> 11) & 0x1F) * 255 / 31;
-    rgb.g = ((color >> 5) & 0x3F) * 255 / 63;
-    rgb.b = (color & 0x1F) * 255 / 31;
+    rgb.r = ((pixel >> 11) & 0x1F) * 255 / 31;
+    rgb.g = ((pixel >> 5) & 0x3F) * 255 / 63;
+    rgb.b = (pixel & 0x1F) * 255 / 31;
 
     return rgb;
 }
 
 void add_pixel(sf::Vertex vec)
 {
-     pixels.push_back(vec);
-    // for( int i = 0  ; i <  pixels.size(); i++)
-    // {
-    //     if(pixels[i].position.x == vec.position.x && pixels[i].position.y == vec.position.y)
-    //     {
-    //         pixels.erase(pixels.begin()+i);
-    //         pixels.push_back(vec);
-    //     }
-    //     else pixels.push_back(vec);
-    // }
+    if(pixels.empty()) pixels.push_back(vec);
+    for( int i = 0  ; i <  pixels.size(); i++)
+    {
+        if(pixels[i].position.x == vec.position.x && pixels[i].position.y == vec.position.y)
+        {
+            pixels.erase(pixels.begin()+i);
+            pixels.push_back(vec);
+            break;
+        }
+        else 
+        {
+            pixels.push_back(vec);
+            break;
+        }
+    }
 }
