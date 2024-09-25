@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 
     FILE *input_file = fopen(input_filename, "rb");
     if (!input_file) {
-        perror("Не удалось открыть входной файл");
+        perror("Failed to open input file");
         return 1;
     }
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     fseek(input_file, 0, SEEK_SET);
 
     if (file_size % 2 != 0) {
-        fprintf(stderr, "Размер файла должен быть кратен 2 для формата RGB565\n");
+        fprintf(stderr, "File size must be a multiple of 2 for RGB565 format\n");
         fclose(input_file);
         return 1;
     }
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     size_t pixel_count = file_size / 2; 
     uint16_t *image_data = (uint16_t *)malloc(pixel_count * sizeof(uint16_t));
     if (!image_data) {
-        perror("Не удалось выделить память");
+        perror("Failed to allocate memory");
         fclose(input_file);
         return 1;
     }
@@ -40,23 +40,15 @@ int main(int argc, char *argv[]) {
 
     FILE *output_file = fopen(output_filename, "w");
     if (!output_file) {
-        perror("Не удалось открыть выходной файл");
+        perror("Failed to open output file");
         free(image_data);
         return 1;
     }
 
-    fprintf(output_file, "{ ");  // Начало массива
-    for (size_t i = 0; i < pixel_count; i++) {
-        fprintf(output_file, "0x%04X", image_data[i]); 
-        if (i < pixel_count - 1) {
-            fprintf(output_file, ", ");
-        }
-    }
-    fprintf(output_file, " }");  // Конец массива
 
     free(image_data);
     fclose(output_file);
 
-    printf("Данные успешно записаны в файл %s\n", output_filename);
+    printf("Data successfully written to file %s\n", output_filename);
     return 0;
 }
