@@ -7,7 +7,7 @@
  #define STOP_BIT_ONE  boost::asio::serial_port_base::stop_bits::one
  #define START_CONVERSATION 0xA 
  #define END_CONVERSATION 0xB
-#define PATH_TO_PORT "/dev/ttyUSB2"
+#define PATH_TO_PORT "/dev/ttyUSB3"
 
 #define CREATE_WINDOW  0x11
 #define RESIZE_WINDOW  0x12

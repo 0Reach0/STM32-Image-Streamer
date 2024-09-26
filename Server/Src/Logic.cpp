@@ -291,10 +291,8 @@ int8_t listening_write_text()
 
 int8_t create_window(uint16_t w, uint16_t h)
 {
-    //window.create(sf::VideoMode(widht, height), "Window");
     widht.store(w);
     height.store(h);
-    //window.setFramerateLimit(60);
     isRender.store(true);
     return 1;
 }

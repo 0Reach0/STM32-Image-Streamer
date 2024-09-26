@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     char  file_type = 'p';
-    if(argc > 4)
+    if(argc > 3)
     {
         file_type = *argv[3];
         if(file_type != 'p' && file_type != 'j')
