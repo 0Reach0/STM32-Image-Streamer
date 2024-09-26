@@ -14,7 +14,7 @@ This project includes four main files:
      from the microcontroller. 
    - It uses SFML to display images based on the received data.
    - **Example** : `Server <PATH_TO_PORT>`
-      - where <PATH_TO_PORT> is the path to the tty port that the STM32 UART is connected to.
+      - where `<PATH_TO_PORT>` is the path to the tty port that the STM32 UART is connected to.
 
 2. **Client**: 
    - This file is designed for integration into your STM32 project 
